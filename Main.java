@@ -8,7 +8,9 @@ public class Main {
     SecretKey key = KeyGenerator.getInstance("DES").generateKey();
     DesEncrypter encrypter = new DesEncrypter(key);
     String encrypted = encrypter.encrypt("Don't tell anybody!");
-    String decrypted = encrypter.decrypt(encrypted);
+    System.out.println("Encrypt: " + encrypted);
+	String decrypted = encrypter.decrypt(encrypted);
+    System.out.println("Decrypt: " + decrypted);
   }
 }
 

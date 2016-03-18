@@ -8,6 +8,7 @@ CLASSES = \
     DesEncrypter.java \
 	Main.java \
 	DesCounter.java \
+	Cryptage.java \
 	
 default: classes
 
