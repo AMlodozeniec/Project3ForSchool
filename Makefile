@@ -6,7 +6,6 @@ JC = javac
 
 CLASSES = \
     DesEncrypter.java \
-	Main.java \
 	DesCounter.java \
 	Cryptage.java \
 	

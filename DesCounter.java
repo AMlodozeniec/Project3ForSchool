@@ -6,6 +6,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import sun.misc.BASE64Encoder;
+import sun.misc.BASE64Decoder;
 
 public class DesCounter{
 	String counter = "00001234";
@@ -36,6 +37,7 @@ public class DesCounter{
 	
 	public ArrayList<String> splitStringIntoBlocks(String line){
 		ArrayList<String> array = new ArrayList<String>();
+		int numBlocks = 0;
 		int arrayIndex = 0;
 		while(line.length() > 0){
 			if(line.length() >= 8){
@@ -51,14 +53,17 @@ public class DesCounter{
 				array.add(arrayIndex, chunk);
 				line = line.substring(line.length(),line.length());
 			}
+			numBlocks++;
 		}
+		System.out.println("Number of plaintext blocks: " + numBlocks);
 		return array;
 	}
 	
 	public String updateCounter(){
 		int counterInt = Integer.parseInt(counter.toString());
 		counterInt++;
-		String s = Integer.toString(counterInt);
+		String s = String.format("%08d", counterInt);
+		//System.out.println("Updatedcounter is " + s);
 		return s;
 	}
 	
@@ -66,13 +71,12 @@ public class DesCounter{
 		StringBuilder sb = new StringBuilder();
 		for(String block: charBlock){
 				String eCounter = encrypter.encrypt(counter);		
-				String s = xor(block, eCounter);
+				String s = xor(block, eCounter,1);
 				sb.append(s);
 				counter = updateCounter();
 		}
 		String output = sb.toString();
-		System.out.println("Encrypted shit from blocks: " + output);
-		bufferOutput.write(output); //THIS IS WRONG
+		bufferOutput.write(output); 
 		bufferOutput.close();
 	}
 	
@@ -80,12 +84,12 @@ public class DesCounter{
 		StringBuilder sb = new StringBuilder();
 		for(String block: charBlock){
 				String eCounter = decrypter.encrypt(counter);		
-				String s = xor(block, eCounter);
+				String s = xor(block, eCounter, 0);
 				sb.append(s);
 				counter = updateCounter();
 		}
 		String output = sb.toString();
-		System.out.println("Encrypted shit from blocks: " + output);
+		//System.out.println("Number of characters in outputfile: " + output.length());
 		bufferOutput.write(output); 
 		bufferOutput.close();
 	}
@@ -96,25 +100,34 @@ public class DesCounter{
 		}
 	}	
 	
-	public String xor(String s, String counter){
+	public String xor(String s, String counter, int f) throws Exception{
 		StringBuilder sb = new StringBuilder();
 		BASE64Encoder enc = new BASE64Encoder();
-		
+		BASE64Decoder decoder = new BASE64Decoder();
 		byte[] sBytes = s.getBytes();
+		
 		byte[] counterBytes = counter.getBytes();
 		
 		byte[] out = new byte[sBytes.length];
 		
-		System.out.println("counter is " + counter);
+	//	System.out.println("counter is " + counter);
+	//	System.out.println("sBytes length " + sBytes.length + " counterlength " + counterBytes.length);
 		for(int i = 0; i < sBytes.length; i++){
 			out[i] = (byte) (sBytes[i] ^ counterBytes[i % counterBytes.length]);	
 			//sb.append((char)(s.charAt(i) ^ counter.charAt(i % counter.length())));
 		}
-		String result = enc.encode(out).replaceAll("\\s", "");
-		sb.append(result);
+		if(f == 1){
+			String result = enc.encode(out).replaceAll("\\s", "");
+			sb.append(result);
 		//String result = sb.toString();
-		System.out.println("xored string: " + result);
-		return result;
+		//	System.out.println("xored string: " + result);
+			return result;
+		}
+		else{
+			String result = new String(out);
+		//	System.out.println("xored string: " + result);
+			return result;
+		}
 		
 	}	
 	
@@ -143,24 +156,26 @@ public class DesCounter{
 	public static void main(String[] args) throws Exception{
 		DesCounter d = new DesCounter();
 		d.checkArgs(args);
-		System.out.format("input: %s output: %s flag: %d\n", d.inputFileName, d.outputFileName, d.flag);
+		//System.out.format("input: %s output: %s flag: %d\n", d.inputFileName, d.outputFileName, d.flag);
 		
 		String line = d.readFile();
+		System.out.println("Number of characters in inputfile: " + line.length());
 		d.openWriteBuffer();
 		
 		SecretKey key = d.createSecretKey();
 		DesEncrypter encrypter = new DesEncrypter(key);
 		
-		ArrayList<String> charBlock = d.splitStringIntoBlocks(line);
-		
-		d.printContents(charBlock);
 		
 		if(d.flag == 1){ //Encryption
-			System.out.format("raw: %s line: %s\n", d.raw, line);
+			ArrayList<String> charBlock = d.splitStringIntoBlocks(line);
+			//d.printContents(charBlock);
 			d.encrypt(charBlock, encrypter);
 		}
 		else if(d.flag == 0){//Decryption
-			System.out.format("raw: %s line: %s\n", d.raw, line);
+			BASE64Decoder decoder = new BASE64Decoder();
+			byte[] sBytes = decoder.decodeBuffer(line);
+			String decodedLine = new String(sBytes);
+			ArrayList<String> charBlock = d.splitStringIntoBlocks(decodedLine);
 			d.decrypt(charBlock, encrypter);	
 		}
 	}
